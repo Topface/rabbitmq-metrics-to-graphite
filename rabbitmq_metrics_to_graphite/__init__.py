@@ -101,7 +101,7 @@ def process(rabbitmq, graphite):
                 if m_instance in node:
                     # We multiply the metric value by 1 to handle boolean conversion
                     _send_graphite_metric(sock, graphite, rabbitmq,
-                                          'nodes.{0}.{1}'.format(node['name'].replace('.', '_'), m_instance_label), node[m_instance]*1)
+                                          'nodes.{0}.{1}'.format(node['name'].replace('.', '_').replace('@', '_'), m_instance_label), node[m_instance]*1)
 
     # Queues
     queues = rabbitClient.get_queues()
@@ -115,7 +115,7 @@ def process(rabbitmq, graphite):
             for queue in queues:
                 if m_instance in queue:
                     _send_graphite_metric(sock, graphite, rabbitmq,
-                                          'queues.{0}.{1}'.format(queue['name'].replace('.', '_'), m_instance), queue[m_instance])
+                                          'queues.{0}.{1}'.format(queue['name'].replace('.', '_').replace('@', '_'), m_instance), queue[m_instance])
 
     timediff = time.time() - starttime
     # Send time elapsed for scrapping metrics
