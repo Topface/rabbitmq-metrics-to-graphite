@@ -25,7 +25,7 @@ else:
         format='%(asctime)s\t%(levelname)s:\t%(message)s', level=logging.INFO)
 
 
-def process(rabbitmq, graphite, skipQueueWithPrefix):
+def process(rabbitmq, graphite, skip_queue_with_prefix_list):
     logging.debug(
         "Processing RabbitMQ: {0} on graphite {1}".format(rabbitmq["cluster_name"], graphite["host"]))
     starttime = time.time()
@@ -108,7 +108,7 @@ def process(rabbitmq, graphite, skipQueueWithPrefix):
     if queues is not None:
         for queue in queues:
             skip_queue = False
-            for prefix in skipQueueWithPrefix.split(','):
+            for prefix in skip_queue_with_prefix_list.split(','):
                 if queue['name'].startswith(prefix):
                     skip_queue = True
             if not skip_queue:
@@ -158,6 +158,10 @@ def main():
         logging.debug('Processing config file {0}'.format(configFilePath))
         with open(configFilePath) as configFile:
             conf = json.load(configFile)
+            if 'skip_queue_with_prefix' in conf:
+                skip_queue_with_prefix = conf['skip_queue_with_prefix']
+            else:
+                skip_queue_with_prefix = []
             logging.debug('Graphite configuration: {0}'.format(
                 conf["graphite_servers"]))
             logging.debug('RabbitMQ configuration: {0}'.format(
@@ -168,7 +172,7 @@ def main():
                 rabbitClient = Client('{0}:{1}'.format(
                     rabbitmq['host'], rabbitmq['port']), rabbitmq['username'], rabbitmq['password'])
                 for graphite in conf["graphite_servers"]:
-                    process(rabbitmq, graphite, conf["skip_queue_with_prefix"])
+                    process(rabbitmq, graphite, skip_queue_with_prefix)
     else:
         logging.error('You must pass existing configFilePath, actual is {0}'.format(
             configFilePath))
