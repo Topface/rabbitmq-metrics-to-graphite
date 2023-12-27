@@ -25,7 +25,7 @@ else:
         format='%(asctime)s\t%(levelname)s:\t%(message)s', level=logging.INFO)
 
 
-def process(rabbitmq, graphite):
+def process(rabbitmq, graphite, skip_queue_with_prefix_list):
     logging.debug(
         "Processing RabbitMQ: {0} on graphite {1}".format(rabbitmq["cluster_name"], graphite["host"]))
     starttime = time.time()
@@ -105,17 +105,22 @@ def process(rabbitmq, graphite):
 
     # Queues
     queues = rabbitClient.get_queues()
-    for m_instance in \
-            ['messages_ready', 'messages_unacknowledged', 'messages',
-             'messages_ready_ram', 'messages_unacknowledged_ram', 'messages_ram',
-             'messages_persistent', 'message_bytes', 'message_bytes_ready',
-             'message_bytes_unacknowledged', 'message_bytes_ram', 'message_bytes_persistent',
-             'consumers', 'consumer_utilisation', 'memory', 'head_message_timestamp']:
-        if queues is not None:
-            for queue in queues:
-                if m_instance in queue:
-                    _send_graphite_metric(sock, graphite, rabbitmq,
-                                          'queues.{0}.{1}'.format(queue['name'].replace('.', '_').replace('@', '_'), m_instance), queue[m_instance])
+    if queues is not None:
+        for queue in queues:
+            skip_queue = False
+            for prefix in skip_queue_with_prefix_list:
+                if queue['name'].startswith(prefix):
+                    skip_queue = True
+            if not skip_queue:
+                for m_instance in \
+                        ['messages_ready', 'messages_unacknowledged', 'messages',
+                         'messages_ready_ram', 'messages_unacknowledged_ram', 'messages_ram',
+                         'messages_persistent', 'message_bytes', 'message_bytes_ready',
+                         'message_bytes_unacknowledged', 'message_bytes_ram', 'message_bytes_persistent',
+                         'consumers', 'consumer_utilisation', 'memory', 'head_message_timestamp']:
+                    if m_instance in queue:
+                        _send_graphite_metric(sock, graphite, rabbitmq,
+                                              'queues.{0}.{1}'.format(queue['name'].replace('.', '_').replace('@', '_'), m_instance), queue[m_instance])
 
     timediff = time.time() - starttime
     # Send time elapsed for scrapping metrics
@@ -153,6 +158,10 @@ def main():
         logging.debug('Processing config file {0}'.format(configFilePath))
         with open(configFilePath) as configFile:
             conf = json.load(configFile)
+            if 'skip_queue_with_prefix' in conf:
+                skip_queue_with_prefix = conf['skip_queue_with_prefix'].split(',')
+            else:
+                skip_queue_with_prefix = []
             logging.debug('Graphite configuration: {0}'.format(
                 conf["graphite_servers"]))
             logging.debug('RabbitMQ configuration: {0}'.format(
@@ -163,7 +172,7 @@ def main():
                 rabbitClient = Client('{0}:{1}'.format(
                     rabbitmq['host'], rabbitmq['port']), rabbitmq['username'], rabbitmq['password'])
                 for graphite in conf["graphite_servers"]:
-                    process(rabbitmq, graphite)
+                    process(rabbitmq, graphite, skip_queue_with_prefix)
     else:
         logging.error('You must pass existing configFilePath, actual is {0}'.format(
             configFilePath))
