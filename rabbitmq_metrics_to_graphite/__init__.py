@@ -108,7 +108,7 @@ def process(rabbitmq, graphite, skip_queue_with_prefix_list):
     if queues is not None:
         for queue in queues:
             skip_queue = False
-            for prefix in skip_queue_with_prefix_list.split(','):
+            for prefix in skip_queue_with_prefix_list:
                 if queue['name'].startswith(prefix):
                     skip_queue = True
             if not skip_queue:
