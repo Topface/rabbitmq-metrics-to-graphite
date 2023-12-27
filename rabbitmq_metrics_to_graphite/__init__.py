@@ -117,10 +117,9 @@ def process(rabbitmq, graphite, skipQueueWithPrefix):
                 for prefix in skipQueueWithPrefix.split(','):
                     if queue['name'].startswith(prefix):
                         skipQueue = True
-                if skipQueue == False:
-                    if m_instance in queue:
-                        _send_graphite_metric(sock, graphite, rabbitmq,
-                                              'queues.{0}.{1}'.format(queue['name'].replace('.', '_').replace('@', '_'), m_instance), queue[m_instance])
+                if m_instance in queue and skipQueue == False:
+                    _send_graphite_metric(sock, graphite, rabbitmq,
+                                          'queues.{0}.{1}'.format(queue['name'].replace('.', '_').replace('@', '_'), m_instance), queue[m_instance])
 
     timediff = time.time() - starttime
     # Send time elapsed for scrapping metrics
