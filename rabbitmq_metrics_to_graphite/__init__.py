@@ -105,21 +105,22 @@ def process(rabbitmq, graphite, skipQueueWithPrefix):
 
     # Queues
     queues = rabbitClient.get_queues()
-    for m_instance in \
-            ['messages_ready', 'messages_unacknowledged', 'messages',
-             'messages_ready_ram', 'messages_unacknowledged_ram', 'messages_ram',
-             'messages_persistent', 'message_bytes', 'message_bytes_ready',
-             'message_bytes_unacknowledged', 'message_bytes_ram', 'message_bytes_persistent',
-             'consumers', 'consumer_utilisation', 'memory', 'head_message_timestamp']:
-        if queues is not None:
-            for queue in queues:
-                skipQueue = False
-                for prefix in skipQueueWithPrefix.split(','):
-                    if queue['name'].startswith(prefix):
-                        skipQueue = True
-                if m_instance in queue and skipQueue == False:
-                    _send_graphite_metric(sock, graphite, rabbitmq,
-                                          'queues.{0}.{1}'.format(queue['name'].replace('.', '_').replace('@', '_'), m_instance), queue[m_instance])
+    if queues is not None:
+        for queue in queues:
+            skip_queue = False
+            for prefix in skipQueueWithPrefix.split(','):
+                if queue['name'].startswith(prefix):
+                    skip_queue = True
+            if not skip_queue:
+                for m_instance in \
+                        ['messages_ready', 'messages_unacknowledged', 'messages',
+                         'messages_ready_ram', 'messages_unacknowledged_ram', 'messages_ram',
+                         'messages_persistent', 'message_bytes', 'message_bytes_ready',
+                         'message_bytes_unacknowledged', 'message_bytes_ram', 'message_bytes_persistent',
+                         'consumers', 'consumer_utilisation', 'memory', 'head_message_timestamp']:
+                    if m_instance in queue:
+                        _send_graphite_metric(sock, graphite, rabbitmq,
+                                              'queues.{0}.{1}'.format(queue['name'].replace('.', '_').replace('@', '_'), m_instance), queue[m_instance])
 
     timediff = time.time() - starttime
     # Send time elapsed for scrapping metrics
