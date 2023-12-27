@@ -159,7 +159,7 @@ def main():
         with open(configFilePath) as configFile:
             conf = json.load(configFile)
             if 'skip_queue_with_prefix' in conf:
-                skip_queue_with_prefix = conf['skip_queue_with_prefix']
+                skip_queue_with_prefix = conf['skip_queue_with_prefix'].split(',')
             else:
                 skip_queue_with_prefix = []
             logging.debug('Graphite configuration: {0}'.format(
